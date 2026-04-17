@@ -16,30 +16,22 @@ class Train(Base):
 
     train_no = Column(String(5), primary_key=True)
     train_name = Column(String, nullable=False)
-
     source_station = Column(String(10), ForeignKey("stations.station_code"))
     destination_station = Column(String(10), ForeignKey("stations.station_code"))
-
     classes = Column(String, nullable=False)
-
-    runs_mon = Column(Boolean)
-    runs_tue = Column(Boolean)
-    runs_wed = Column(Boolean)
-    runs_thu = Column(Boolean)
-    runs_fri = Column(Boolean)
-    runs_sat = Column(Boolean)
-    runs_sun = Column(Boolean)
+    days = Column(String, nullable=False)
 
 
 class TrainStop(Base):
     __tablename__ = "train_stops"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-
     train_no = Column(String(5), ForeignKey("trains.train_no"))
     station_code = Column(String(10), ForeignKey("stations.station_code"))
-
+    Station_name = Column(String, nullable=False)
     stop_index = Column(Integer, nullable=False)
-    arrival_time = Column(Time)
-    departure_time = Column(Time)
+    arrival_time = Column(Time, nullable=False)
+    departure_time = Column(Time, nullable=False)
+    halt_time = Column(String(10), nullable=False)
     day_offset = Column(Integer, nullable=False)
+    avg_delay = Column(String(10), nullable=False)

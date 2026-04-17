@@ -53,7 +53,8 @@ def save_train(data):
             if not session.get(Station, stop["station_code"]):
                 station = Station(
                     station_code = stop["station_code"],
-                    station_name = stop["station_name"]
+                    station_name = stop["station_name"],
+                    is_major_junction = False
                 )
                 session.add(station)
 
@@ -66,13 +67,7 @@ def save_train(data):
                 source_station = data["stops"][0]["station_code"],
                 destination_station = data["stops"][-1]["station_code"],
                 classes = data["classes"],
-                runs_mon = service_days["Mon"],
-                runs_tue = service_days["Tue"],
-                runs_wed = service_days["Wed"],
-                runs_thu = service_days["Thu"],
-                runs_fri = service_days["Fri"],
-                runs_sat = service_days["Sat"],
-                runs_sun = service_days["Sun"],
+                days = data["days"],
             )
             session.add(train)
         
@@ -86,10 +81,13 @@ def save_train(data):
                 trainstop = TrainStop(
                     train_no = data["train_no"],
                     station_code = stop["station_code"],
+                    station_name = stop["station_name"],
                     stop_index = idx,
                     arrival_time = stop["arrival_time"],
                     departure_time = stop["departure_time"],
+                    halt_time = stop["halt_time"],
                     day_offset = stop["day"],
+                    avg_delay = stop["avg_delay"]
                 )
                 session.add(trainstop)
 
