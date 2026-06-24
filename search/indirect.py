@@ -157,6 +157,19 @@ def search_indirect(
         f"for {source}→{destination}"
     )
 
+    direct_train_nos = set(
+    row["train_no"].strip()
+    for row in execute("""
+        SELECT DISTINCT src.train_no
+        FROM train_stops src
+        JOIN train_stops dst
+            ON  src.train_no    = dst.train_no
+            AND dst.station_code = %s
+            AND dst.stop_index  > src.stop_index
+        WHERE src.station_code = %s
+    """, (destination, source))
+)
+
     results = []
 
     for station in transfer_stations:
@@ -170,6 +183,9 @@ def search_indirect(
 
         for l1 in leg1_rows:
             # Day filter for leg1
+            if l1["train_no"].strip() in direct_train_nos:
+                continue
+
             if not train_runs_on_day(l1["service_days"], journey_date.weekday()):
                 continue
 
@@ -179,15 +195,15 @@ def search_indirect(
             if depart_after and l1_src_dep and l1_src_dep < depart_after:
                 continue
 
+            if (l1["journey_minutes"] or 0) < 20:
+                continue
+
             l1_xfr_arr = l1["xfr_arrival"] or l1["xfr_departure"]
             if not l1_xfr_arr:
                 continue
 
             for l2 in leg2_rows:
-                # Same train = not a real transfer
-                if l1["train_no"].strip() == l2["train_no"].strip():
-                    continue
-
+                
                 l2_xfr_dep = l2["xfr_departure"] or l2["xfr_arrival"]
                 if not l2_xfr_dep:
                     continue
@@ -275,7 +291,7 @@ def search_indirect(
     seen = {}
     deduped = []
     for r in results:
-        key = (r.leg1.train_no, r.leg2.train_no, r.transfer.station_code)
+        key = (r.leg1.train_no, r.leg2.train_no)   # train pair only
         if key not in seen:
             seen[key] = True
             deduped.append(r)

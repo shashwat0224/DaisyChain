@@ -11,6 +11,16 @@ class StopInfo:
     arrival_time:   Optional[time]
     day_offset:     int
 
+@dataclass
+class TransferInfo:
+    station_code:    str
+    station_name:    str
+    is_major:        bool
+    wait_minutes:    int
+    arrive_time:     time
+    arrive_day:      int
+    depart_time:     time
+    depart_day:      int
 
 @dataclass
 class DirectResult:
@@ -18,10 +28,10 @@ class DirectResult:
     train_name:       str
     source_station:   str
     dest_station:     str
-    departure_time:   time
-    departure_day:    int
     arrival_time:     time
     arrival_day:      int
+    departure_time:   time
+    departure_day:    int
     journey_minutes:  int
     stops_in_between: int
     classes:          str
@@ -40,17 +50,6 @@ class DirectResult:
     def arrival_str(self) -> str:
         return self.arrival_time.strftime("%H:%M") if self.arrival_time else "--"
 
-
-@dataclass
-class TransferInfo:
-    station_code:    str
-    station_name:    str
-    is_major:        bool
-    wait_minutes:    int
-    arrive_time:     time
-    arrive_day:      int
-    depart_time:     time
-    depart_day:      int
 
 
 @dataclass

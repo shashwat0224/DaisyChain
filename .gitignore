@@ -1,0 +1,11 @@
+web_scraping/__pycache__/
+**/scrape_nb.ipynb
+**/__pycache__/
+venv/
+scraper.log
+state.db
+train_numbers.txt
+engine/
+web_scraping/
+test_search.py
+verify.py

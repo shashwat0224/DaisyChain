@@ -19,16 +19,12 @@ def get_transfer_weekday(journey_date: date, leg1_arrival_offset: int) -> int:
 def train_runs_on_day(service_days: str, weekday: int) -> bool:
     """
     Checks if a train runs on a given weekday.
-    Ixigo format: "Fri, Sun" or "Mon, Wed, Fri" or "Daily"
-    weekday: 0=Mon, 1=Tue, ..., 6=Sun
+    weekday: 0=Mon, 1=Tue, 2=Wed, 3=Thu, 4=Fri, 5=Sat, 6=Sun
     """
     if not service_days:
         return True   # assume runs if data missing
 
     service_days = service_days.strip().lower()
-
-    if "daily" in service_days:
-        return True
 
     day_map = {
         0: ["mon", "monday"],

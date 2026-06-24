@@ -1,19 +1,26 @@
+import os
 import psycopg2
 import psycopg2.extras
 import logging
 import re
 from datetime import time
 from contextlib import contextmanager
+from dotenv import load_dotenv
+from pathlib import Path
+
+# Scraper's .env lives one level up from scraper/ folder
+load_dotenv(Path(__file__).resolve().parent.parent / 'backend' / '.env')
 
 logger = logging.getLogger(__name__)
 
 DB_CONFIG = {
-    "host":     "localhost",
-    "port":     5432,
-    "dbname":   "train_db",
-    "user":     "postgres",
-    "password": "20357",   # ← change this
+    "host":     os.getenv("DB_HOST",     "localhost"),
+    "port":     int(os.getenv("DB_PORT", "5432")),
+    "dbname":   os.getenv("DB_NAME",     "train_db"),
+    "user":     os.getenv("DB_USER",     "postgres"),
+    "password": os.getenv("DB_PASSWORD", ""),
 }
+
 
 '''
             blocked          : 2
