@@ -103,7 +103,8 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_THROTTLE_RATES': {
         'anon': '10/day',       # free tier: 10 searches per day
-        'user': '200/day',      # premium tier: unlimited (200 is just a safety cap)
+        'user': '200/day',      
+        'premium': '200/day',       # premium tier: unlimited (200 is just a safety cap)
     }
 }
 

@@ -75,7 +75,11 @@ def _get_legs_through_station(
                     COALESCE(dst.arrival_time, dst.departure_time)
                     - COALESCE(xfr.departure_time, xfr.arrival_time)
                 ))::int / 60
-            ) AS journey_minutes
+            ) AS journey_minutes,
+            -- get origin day_offset for service_day check
+            (SELECT day_offset FROM train_stops 
+             WHERE train_no = xfr.train_no 
+             AND stop_index = 0) AS origin_day_offset
         FROM train_stops xfr
         JOIN train_stops dst
             ON  xfr.train_no     = dst.train_no
@@ -121,7 +125,12 @@ def _get_transfer_stations(
     params = (source, destination, source, destination)
 
     if major_only:
-        query += " AND s.is_major_junction = TRUE"
+        query += """
+        AND s.is_major_junction = TRUE
+        ORDER BY s.is_major_junction DESC, s.station_code ASC
+        """
+
+    query += " LIMIT 100"
 
     return execute(query, params)
 
@@ -203,6 +212,8 @@ def search_indirect(
                 continue
 
             for l2 in leg2_rows:
+                if l1["train_no"].strip() == l2["train_no"].strip():
+                    continue
                 
                 l2_xfr_dep = l2["xfr_departure"] or l2["xfr_arrival"]
                 if not l2_xfr_dep:

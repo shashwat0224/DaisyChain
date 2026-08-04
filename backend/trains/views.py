@@ -103,7 +103,6 @@ class IndirectSearchView(APIView):
         destination = request.query_params.get("destination", "").upper().strip()
         date_str    = request.query_params.get("date", "")
         after_str   = request.query_params.get("after", "")
-        max_r       = request.query_params.get("max_results", "10")
 
         errors = {}
         if not source:
@@ -120,10 +119,13 @@ class IndirectSearchView(APIView):
         if errors:
             return Response({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            max_results = min(int(max_r), 20)   # cap at 20
-        except ValueError:
-            max_results = 10
+        user = request.user
+        if user.is_authenticated and user.profile.tier == 'premium':
+            max_indirect = 20
+        elif user.is_authenticated:
+            max_indirect = 10
+        else:
+            max_indirect = 5
 
         depart_after = parse_time(after_str) if after_str else None
 
@@ -133,7 +135,7 @@ class IndirectSearchView(APIView):
                 destination  = destination,
                 journey_date = journey_date,
                 depart_after = depart_after,
-                max_results  = max_results,
+                max_results  = max_indirect,
             )
         except Exception as e:
             logger.error(f"Indirect search error: {e}", exc_info=True)
@@ -184,13 +186,21 @@ class CombinedSearchView(APIView):
 
         depart_after = parse_time(after_str) if after_str else None
 
+        user = request.user
+        if user.is_authenticated and user.profile.tier == 'premium':
+            max_indirect = 20
+        elif user.is_authenticated:
+            max_indirect = 10
+        else:
+            max_indirect = 5
+
         try:
             direct   = search_direct(
                 source, destination, journey_date, depart_after
             )
             indirect = search_indirect(
                 source, destination, journey_date, depart_after,
-                max_results=10
+                max_results=max_indirect
             )
         except Exception as e:
             logger.error(f"Combined search error: {e}", exc_info=True)
@@ -219,6 +229,8 @@ class StationSearchView(APIView):
     Returns stations matching the query (name or code).
     Used by Flutter autocomplete when user types a station name.
     """
+
+    throttle_classes = []
 
     def get(self, request):
         q = request.query_params.get("q", "").strip()
@@ -250,4 +262,61 @@ class StationSearchView(APIView):
             "query":   q,
             "count":   len(results),
             "results": results,
+        })
+    
+class TrainStopsView(APIView):
+    def get(self, request, train_no):
+        from search.db import execute
+        
+        # Get train info first
+        train = execute("""
+            SELECT train_no, train_name, classes, service_days
+            FROM trains
+            WHERE train_no = %s
+        """, (train_no,))
+
+        if not train:
+            return Response(
+                {"error": f"Train {train_no} not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Get all stops in order
+        stops = execute("""
+            SELECT
+                ts.stop_index,
+                ts.station_code,
+                s.station_name,
+                ts.arrival_time,
+                ts.departure_time,
+                ts.halt_time,
+                ts.day_offset,
+                ts.avg_delay
+            FROM train_stops ts
+            JOIN stations s ON s.station_code = ts.station_code
+            WHERE ts.train_no = %s
+            ORDER BY ts.stop_index
+        """, (train_no,))
+
+        # Convert time objects to strings — not JSON serializable by default
+        formatted_stops = []
+        for stop in stops:
+            formatted_stops.append({
+                "stop_index":      stop["stop_index"],
+                "station_code":    stop["station_code"],
+                "station_name":    stop["station_name"],
+                "arrival_time":    str(stop["arrival_time"])[:5]  if stop["arrival_time"]   else None,
+                "departure_time":  str(stop["departure_time"])[:5] if stop["departure_time"] else None,
+                "halt_time":       stop["halt_time"],
+                "day_offset":      stop["day_offset"],
+                "avg_delay":       stop["avg_delay"],
+            })
+
+        return Response({
+            "train_no":    train[0]["train_no"].strip(),
+            "train_name":  train[0]["train_name"],
+            "classes":     train[0]["classes"],
+            "service_days": train[0]["service_days"],
+            "total_stops": len(formatted_stops),
+            "stops":       formatted_stops,
         })
